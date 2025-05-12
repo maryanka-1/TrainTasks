@@ -3,48 +3,49 @@ package com.example.catsgram.controller;
 import com.example.catsgram.exceptions.InvalidEmailException;
 import com.example.catsgram.exceptions.UserAlreadyExistException;
 import com.example.catsgram.model.User;
+import com.example.catsgram.service.UserService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
+import org.zalando.logbook.*;
+import java.io.IOException;
 import java.util.*;
 
+
 @RestController
+@Slf4j
+@RequiredArgsConstructor
 @RequestMapping("/users")
 public class UserController {
 
-    private final Map<String, User> users = new HashMap<>();
+    private final UserService service;
 
     @GetMapping
-    public Collection<User> getUsers(){
-        return users.values();
+    public Collection<User> getUsers() throws IOException {
+        Collection<User> listUsers = service.getListUsers().values();
+        log.debug("количество пользователей на данный момент = {}", listUsers.size());
+        return listUsers;
     }
 
     @PostMapping
-    public User createUser(@RequestBody User newUser){
-        if(newUser.getEmail()==null || newUser.getEmail().isEmpty()){
-            throw new InvalidEmailException("Адрес электронной почты не может быть пустым.");
-        }
-        if(users.containsKey(newUser.getEmail())){
-            throw new UserAlreadyExistException("Пользователь с электронной почтой " +
-                    newUser.getEmail() + " уже зарегистрирован.");
-        }
-        users.put(newUser.getEmail(), newUser);
+    public User createUser(@RequestBody User newUser) {
+        service.addUser(newUser);
+        log.info("Пользователь {} был создан", newUser.toString());
         return newUser;
     }
 
     @PutMapping
-    public User updateUser(@RequestBody User newUser){
-        if(newUser.getEmail()==null || newUser.getEmail().isEmpty()){
-            throw new InvalidEmailException("Адрес электронной почты не может быть пустым.");
-        }
-        if(newUser.getNickName()==null || newUser.getNickName().isEmpty()){
-            throw new InvalidEmailException("Ник не может быть пустым.");
-        }
-        if(newUser.getBirthday()==null){
-            throw new InvalidEmailException("Дата рождения должна быть заполнена.");
-        }
-        users.put(newUser.getEmail(), newUser);
+    public User updateUser(@RequestBody User newUser) {
+        service.addUser(newUser);
+        log.info("Пользователь {} был обновлен", newUser.toString());
         return newUser;
     }
 
+    @GetMapping("/user/{email}")
+    public User getUserById(@PathVariable("email") String email){
+        User result = service.findUserByEmail(email);
+        log.info("Пользователь с email: {} - {}", email, result.toString());
+        return result;
+    }
 
 }
